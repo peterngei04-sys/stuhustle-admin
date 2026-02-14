@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { auth, db } from "../firebase";
 import {
   collection,
-  getDocs,
+  onSnapshot,
   updateDoc,
   doc
 } from "firebase/firestore";
@@ -14,25 +14,17 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "users"));
-        const userList = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setUsers(userList);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const unsub = onSnapshot(collection(db, "users"), (snapshot) => {
+      const list = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setUsers(list);
+    });
 
-    fetchUsers();
+    return () => unsub();
   }, []);
 
   const handleApprove = async (userId, index) => {
@@ -44,10 +36,6 @@ export default function Admin() {
 
     await updateDoc(userRef, { withdrawals });
 
-    setUsers(users.map(u =>
-      u.id === userId ? { ...u, withdrawals } : u
-    ));
-
     setSelectedUser({ ...userData, withdrawals });
   };
 
@@ -56,65 +44,87 @@ export default function Admin() {
     navigate("/login");
   };
 
-  const filteredUsers = users.filter(user =>
-    user.email?.toLowerCase().includes(search.toLowerCase())
+  const filteredUsers = users.filter(u =>
+    u.email?.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (loading) return <div className="admin-loading">Loading...</div>;
+  const totalBalance = users.reduce((sum, u) => sum + (u.balanceUSD || 0), 0);
+  const totalPending = users.reduce((sum, u) => sum + (u.pendingUSD || 0), 0);
 
   return (
-    <div className="admin-wrapper">
+    <div className="admin">
 
-      <div className="admin-header">
-        <h1>Admin Dashboard</h1>
+      <aside className="sidebar">
+        <h2>Stuhustle</h2>
         <button onClick={handleLogout}>Logout</button>
-      </div>
+      </aside>
 
-      <div className="admin-controls">
+      <main className="main">
+
+        <div className="top">
+          <h1>Admin Dashboard</h1>
+        </div>
+
+        <div className="stats">
+          <div className="card">
+            <h3>Total Users</h3>
+            <p>{users.length}</p>
+          </div>
+
+          <div className="card">
+            <h3>Total Balance</h3>
+            <p>${totalBalance}</p>
+          </div>
+
+          <div className="card">
+            <h3>Total Pending</h3>
+            <p>${totalPending}</p>
+          </div>
+        </div>
+
         <input
-          type="text"
+          className="search"
           placeholder="Search user by email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-      </div>
 
-      <div className="admin-table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Balance</th>
-              <th>Pending</th>
-              <th>Withdrawals</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.map(user => (
-              <tr key={user.id} onClick={() => setSelectedUser(user)}>
-                <td>{user.email}</td>
-                <td>${user.balanceUSD || 0}</td>
-                <td>${user.pendingUSD || 0}</td>
-                <td>{user.withdrawals?.length || 0}</td>
+        <div className="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Balance</th>
+                <th>Pending</th>
+                <th>Withdrawals</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {filteredUsers.map(user => (
+                <tr key={user.id} onClick={() => setSelectedUser(user)}>
+                  <td>{user.email}</td>
+                  <td>${user.balanceUSD || 0}</td>
+                  <td>${user.pendingUSD || 0}</td>
+                  <td>{user.withdrawals?.length || 0}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+      </main>
 
       {selectedUser && (
-        <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-
-            <h2>User Details</h2>
-            <p><strong>Email:</strong> {selectedUser.email}</p>
-            <p><strong>Balance:</strong> ${selectedUser.balanceUSD || 0}</p>
-            <p><strong>Pending:</strong> ${selectedUser.pendingUSD || 0}</p>
+        <div className="drawer">
+          <div className="drawer-content">
+            <h2>{selectedUser.email}</h2>
+            <p>Balance: ${selectedUser.balanceUSD || 0}</p>
+            <p>Pending: ${selectedUser.pendingUSD || 0}</p>
 
             <h3>Withdrawals</h3>
             {selectedUser.withdrawals?.length > 0 ? (
               selectedUser.withdrawals.map((w, i) => (
-                <div key={i} className="withdraw-item">
+                <div key={i} className="withdraw-row">
                   <span>
                     ${w.amount} → ${w.netAmount} ({w.status})
                   </span>
@@ -132,22 +142,12 @@ export default function Admin() {
               <p>No withdrawals</p>
             )}
 
-            <h3>Activity</h3>
-            {selectedUser.activities?.length > 0 ? (
-              selectedUser.activities.map((act, i) => (
-                <p key={i}>• {act}</p>
-              ))
-            ) : (
-              <p>No activity</p>
-            )}
-
             <button
-              className="close-btn"
+              className="close"
               onClick={() => setSelectedUser(null)}
             >
               Close
             </button>
-
           </div>
         </div>
       )}
