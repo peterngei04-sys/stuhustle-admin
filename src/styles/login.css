@@ -1,7 +1,7 @@
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #0f172a;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #1e3a8a, #0f172a);
 }
 
 .login-container {
@@ -14,32 +14,44 @@ body {
 .login-box {
   background: white;
   padding: 40px;
-  border-radius: 10px;
-  width: 300px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  width: 340px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  text-align: center;
 }
 
 .login-box h2 {
-  text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  color: #111827;
 }
 
 .login-box input {
   width: 100%;
-  padding: 10px;
+  padding: 14px;
   margin-bottom: 15px;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: 0.3s;
+}
+
+.login-box input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
 }
 
 .login-box button {
   width: 100%;
-  padding: 10px;
+  padding: 14px;
   background: #2563eb;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 15px;
   cursor: pointer;
+  transition: 0.3s;
 }
 
 .login-box button:hover {
@@ -49,5 +61,22 @@ body {
 .error {
   color: red;
   font-size: 14px;
-  text-align: center;
+  margin-top: 10px;
+}
+
+.success-popup {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #22c55e;
+  color: white;
+  padding: 15px 20px;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  animation: slideIn 0.4s ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 }
