@@ -1,0 +1,74 @@
+.admin-container {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background: #f9f9f9;
+  min-height: 100vh;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.admin-header h1 {
+  color: #333;
+}
+
+.admin-header button {
+  padding: 8px 15px;
+  background-color: #ff4d4f;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.admin-header button:hover {
+  background-color: #d9363e;
+}
+
+.admin-main h2 {
+  margin-bottom: 15px;
+  color: #444;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.admin-table th {
+  background: #f0f0f0;
+  text-align: left;
+}
+
+.admin-table td button.approve-btn {
+  margin-left: 10px;
+  padding: 3px 8px;
+  background: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.admin-table td button.approve-btn:hover {
+  background: #096dd9;
+}
+
+.admin-loading {
+  font-size: 18px;
+  color: #555;
+}

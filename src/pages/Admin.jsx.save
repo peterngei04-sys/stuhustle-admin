@@ -1,0 +1,23 @@
+import { auth } from "../firebase";
+import { useNavigate } from "react-router-dom";
+
+function AdminDashboard() {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    navigate("/login");
+  };
+
+  return (
+    <div className="admin-dashboard">
+      <header>
+        <h2>Admin Dashboard</h2>
+        <button onClick={handleLogout}>Logout</button>
+      </header>
+      {/* Rest of your admin content */}
+    </div>
+  );
+}
+
+export default AdminDashboard;
