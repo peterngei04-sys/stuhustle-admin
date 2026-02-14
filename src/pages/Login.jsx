@@ -2,77 +2,69 @@ import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 import "../styles/login.css";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [showSuccess, setShowSuccess] = useState(false);
-
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError("");
 
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userEmail = userCredential.user.email;
 
-      if (userCredential.user.email !== "sstuhustle@gmail.com") {
-        setError("Access denied. Not an admin.");
-        return;
+      // Only allow admin
+      if (userEmail !== "sstuhustle@gmail.com") {
+        return Swal.fire({
+          icon: "error",
+          title: "Access Denied",
+          text: "You are not an admin",
+        });
       }
 
-      setShowSuccess(true);
+      await Swal.fire({
+        icon: "success",
+        title: "Login Successful",
+        text: "Redirecting to dashboard...",
+        timer: 1500,
+        showConfirmButton: false,
+      });
 
-      setTimeout(() => {
-        navigate("/admin");
-      }, 1500);
+      navigate("/admin");
 
     } catch (err) {
-      setError("Invalid email or password.");
+      Swal.fire({
+        icon: "error",
+        title: "Login Failed",
+        text: "Invalid email or password",
+      });
     }
   };
 
   return (
-    <>
-      {showSuccess && (
-        <div className="success-popup">
-          Login Successful 🎉
-        </div>
-      )}
-
-      <div className="login-container">
-        <div className="login-box">
-          <h2>Stuhustle Admin</h2>
-          <form onSubmit={handleLogin}>
-            <input
-              type="email"
-              placeholder="Admin Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-
-            <button type="submit">Login</button>
-          </form>
-
-          {error && <p className="error">{error}</p>}
-        </div>
-      </div>
-    </>
+    <div className="login-container">
+      <h1>Admin Login</h1>
+      <form onSubmit={handleLogin}>
+        <input
+          type="email"
+          placeholder="Admin Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <button type="submit">Login</button>
+      </form>
+    </div>
   );
 }

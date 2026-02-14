@@ -1,82 +1,84 @@
-body {
+/* Reset */
+* {
   margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Page background */
+body {
   font-family: 'Segoe UI', sans-serif;
   background: linear-gradient(135deg, #1e3a8a, #0f172a);
 }
 
+/* Center container */
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
+  padding: 20px;
 }
 
-.login-box {
-  background: white;
+/* Card */
+.login-container form {
+  background: #ffffff;
   padding: 40px;
-  border-radius: 16px;
-  width: 340px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-  text-align: center;
+  width: 100%;
+  max-width: 380px;
+  border-radius: 18px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
 }
 
-.login-box h2 {
-  margin-bottom: 25px;
-  color: #111827;
+/* Title */
+.login-container h1 {
+  position: absolute;
+  top: 100px;
+  color: white;
+  font-size: 28px;
+  font-weight: 600;
 }
 
-.login-box input {
+/* Inputs */
+.login-container input {
   width: 100%;
   padding: 14px;
-  margin-bottom: 15px;
+  margin-bottom: 18px;
   border: 1px solid #ddd;
-  border-radius: 10px;
-  font-size: 14px;
-  transition: 0.3s;
+  border-radius: 12px;
+  font-size: 15px;
+  transition: all 0.3s ease;
 }
 
-.login-box input:focus {
+.login-container input:focus {
   outline: none;
   border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
 }
 
-.login-box button {
-  width: 100%;
+/* Button */
+.login-container button {
   padding: 14px;
   background: #2563eb;
   color: white;
+  font-weight: 600;
   border: none;
-  border-radius: 10px;
-  font-weight: bold;
+  border-radius: 12px;
   font-size: 15px;
   cursor: pointer;
-  transition: 0.3s;
+  transition: all 0.3s ease;
 }
 
-.login-box button:hover {
+.login-container button:hover {
   background: #1d4ed8;
+  transform: translateY(-2px);
 }
 
-.error {
-  color: red;
-  font-size: 14px;
-  margin-top: 10px;
-}
-
-.success-popup {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: #22c55e;
-  color: white;
-  padding: 15px 20px;
-  border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-  animation: slideIn 0.4s ease;
-}
-
-@keyframes slideIn {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+/* Responsive */
+@media (max-width: 480px) {
+  .login-container form {
+    padding: 30px;
+  }
 }
