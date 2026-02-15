@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { auth, db } from "../firebase";
 import {
   collection,
@@ -7,37 +7,100 @@ import {
   doc
 } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer
+} from "recharts";
 import "../styles/admin.css";
 
 export default function Admin() {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [notification, setNotification] = useState("");
 
+  // 🔐 ADMIN PROTECTION
+  useEffect(() => {
+    const unsub = auth.onAuthStateChanged(async (user) => {
+      if (!user) return navigate("/login");
+
+      const unsubUser = onSnapshot(
+        doc(db, "users", user.uid),
+        (snap) => {
+          const data = snap.data();
+          if (!data || data.role !== "admin") {
+            navigate("/");
+          }
+        }
+      );
+
+      return () => unsubUser();
+    });
+
+    return () => unsub();
+  }, []);
+
+  // 🔥 REAL TIME USERS
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "users"), (snapshot) => {
       const list = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+
+      const pendingCount = list.reduce(
+        (sum, u) =>
+          sum +
+          (u.withdrawals?.filter(w => w.status === "pending").length || 0),
+        0
+      );
+
+      if (pendingCount > 0) {
+        setNotification("⚠️ New Pending Withdrawals");
+      } else {
+        setNotification("");
+      }
+
       setUsers(list);
     });
 
     return () => unsub();
   }, []);
 
-  const handleApprove = async (userId, index) => {
-    const userRef = doc(db, "users", userId);
-    const userData = users.find(u => u.id === userId);
+  // 📊 TOTALS
+  const totalBalance = users.reduce((sum, u) => sum + (u.balanceUSD || 0), 0);
+  const totalPending = users.reduce((sum, u) => sum + (u.pendingUSD || 0), 0);
 
-    const withdrawals = [...(userData.withdrawals || [])];
-    withdrawals[index].status = "approved";
+  // 📈 Revenue Chart Data
+  const revenueData = useMemo(() => {
+    return users.map(u => ({
+      name: u.email?.slice(0, 5),
+      balance: u.balanceUSD || 0
+    }));
+  }, [users]);
 
-    await updateDoc(userRef, { withdrawals });
+  // 📊 Withdrawal Chart Data
+  const withdrawalData = useMemo(() => {
+    return users.map(u => ({
+      name: u.email?.slice(0, 5),
+      withdrawals: u.withdrawals?.length || 0
+    }));
+  }, [users]);
 
-    setSelectedUser({ ...userData, withdrawals });
-  };
+  // 📉 User Growth Data
+  const growthData = useMemo(() => {
+    return users.map((u, index) => ({
+      name: `User ${index + 1}`,
+      count: index + 1
+    }));
+  }, [users]);
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -48,23 +111,22 @@ export default function Admin() {
     u.email?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalBalance = users.reduce((sum, u) => sum + (u.balanceUSD || 0), 0);
-  const totalPending = users.reduce((sum, u) => sum + (u.pendingUSD || 0), 0);
-
   return (
     <div className="admin">
 
       <aside className="sidebar">
-        <h2>Stuhustle</h2>
+        <div>
+          <h2>Enterprise Admin</h2>
+          {notification && <div className="alert">{notification}</div>}
+        </div>
         <button onClick={handleLogout}>Logout</button>
       </aside>
 
       <main className="main">
 
-        <div className="top">
-          <h1>Admin Dashboard</h1>
-        </div>
+        <h1>Analytics Dashboard</h1>
 
+        {/* Stats */}
         <div className="stats">
           <div className="card">
             <h3>Total Users</h3>
@@ -82,9 +144,54 @@ export default function Admin() {
           </div>
         </div>
 
+        {/* Charts */}
+        <div className="charts">
+
+          <div className="chart-box">
+            <h3>Revenue Overview</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="balance" stroke="#22c55e" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="chart-box">
+            <h3>Withdrawals Count</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={withdrawalData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="withdrawals" fill="#3b82f6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="chart-box">
+            <h3>User Growth</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={growthData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="count" stroke="#facc15" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+        </div>
+
+        {/* Users Table */}
         <input
           className="search"
-          placeholder="Search user by email..."
+          placeholder="Search user..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -101,7 +208,7 @@ export default function Admin() {
             </thead>
             <tbody>
               {filteredUsers.map(user => (
-                <tr key={user.id} onClick={() => setSelectedUser(user)}>
+                <tr key={user.id}>
                   <td>{user.email}</td>
                   <td>${user.balanceUSD || 0}</td>
                   <td>${user.pendingUSD || 0}</td>
@@ -113,45 +220,6 @@ export default function Admin() {
         </div>
 
       </main>
-
-      {selectedUser && (
-        <div className="drawer">
-          <div className="drawer-content">
-            <h2>{selectedUser.email}</h2>
-            <p>Balance: ${selectedUser.balanceUSD || 0}</p>
-            <p>Pending: ${selectedUser.pendingUSD || 0}</p>
-
-            <h3>Withdrawals</h3>
-            {selectedUser.withdrawals?.length > 0 ? (
-              selectedUser.withdrawals.map((w, i) => (
-                <div key={i} className="withdraw-row">
-                  <span>
-                    ${w.amount} → ${w.netAmount} ({w.status})
-                  </span>
-
-                  {w.status === "pending" && (
-                    <button
-                      onClick={() => handleApprove(selectedUser.id, i)}
-                    >
-                      Approve
-                    </button>
-                  )}
-                </div>
-              ))
-            ) : (
-              <p>No withdrawals</p>
-            )}
-
-            <button
-              className="close"
-              onClick={() => setSelectedUser(null)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
